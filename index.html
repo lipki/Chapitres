@@ -1,42 +1,86 @@
 <!doctype html>
 <html>
   <head>
-    <title>Socket.IO chat</title>
-    <style>
-      * { margin: 0; padding:0; box-sizing:border-box; }
-      body { font: 13px Helvetica, Arial; }
-      .zone_saisie { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
-      .zone_saisie input { border: 0; padding: 10px; width: 90%; }
-      .zone_saisie button { width: 9%; background: rgb(); border: none; }
-      #messages {list-style-type: none; margin: 0 }
-      #messages li {padding: 5px 10px; }
-      #messages li:nth-child(odd) {background: #eee; }
-    </style>
+    <title>Chapitres - Home</title>
+    <link rel="stylesheet" type="text/css" href="/style.css">
   </head>
-  <body>
+  <body class="parent">
     <script src="/socket.io/socket.io.js"></script>
     <script>
       var socket = io();
 
-      var send = function () {
-        var text = document.getElementById('m').value;
-        socket.emit('chat message', text);
+      socket.on('home', function (gameData) {
+
+        const gameD = JSON.parse(gameData);
+
+        console.log('A user is connected');
+        console.log('├ random pseudo : ', gameD.playerPseudo);
+        console.log('└ gameUUID : ' + gameD.gameUUID);
+
+        document.getElementById('sendPseudo').value = gameD.playerPseudo;
+        document.getElementById('sendGameUUID').value = gameD.gameUUID;
+      });
+
+      var newPlayer = function () {
+        const playerPseudo = document.getElementById('sendPseudo').value;
+        const gameUUID = document.getElementById('sendGameUUID').value;
+        socket.emit('new player', JSON.stringify({'gameUUID':gameUUID, 'playerPseudo':playerPseudo}));
       }
 
-      var receive = function (msg) {
-        var li = document.createElement('li');
-        li.innerText = msg;
-        document.getElementById('messages').append(li);
-      }
+      socket.on('switch to wait room', function (gameData) {
 
-      socket.on('chat message', receive);
+        const gameD = JSON.parse(gameData);
+
+        console.log('switch to wait room');
+        console.log('└ gameUUID : ' + gameD.gameUUID);
+
+        console.log(document.getElementById('gameUUID'))
+        document.getElementById('gameUUID').innerText = gameD.gameUUID;
+
+        document.getElementById('home').style.display = 'none';
+        document.getElementById('wait').style.display = 'block';
+      });
+
+      socket.on('update player list', function (gameData) {
+
+        const gameD = JSON.parse(gameData);
+
+        console.log('update player list');
+        console.log('├ add player : ' + gameD.newplayer);
+        console.log('├ remove player : ' + gameD.removeplayer);
+        console.log('└ gameUUID : ' + gameD.gameUUID);
+
+        document.getElementById('playerlist').replaceChildren();
+
+        gameD.playerList.forEach(element => {
+          console.log(' └ ' + element.pseudo);
+          let li = document.createElement('li');
+          li.innerText = element.pseudo;
+          document.getElementById('playerlist').append(li);
+        });
+      });
+
     </script>
-    <div>
-      <ul id="messages"></ul>
-      <div class="zone_saisie">
-        <input id="m">
-        <button onclick="send()">Send</button>
+    <h1>Chapitres</h1>
+    <section id="home">
+      <div>
+        <p>
+          Text d'avertissement.
+        </p>
       </div>
-    </div>
+      <fieldset>
+        <legend>Connectez-vous !</legend>
+        <label for="sendPseudo">Choisisez un pseudo.</label>
+        <input id="sendPseudo"><br/>
+        <label for="sendGameUUID">Lancez cette partie, ou utilisez l'indentifiant d'une partie existante.</label>
+        <input id="sendGameUUID"><br/>
+        <button onclick="newPlayer()">Jouez !</button>
+      </fieldset>
+    </section>
+    <section id="wait" class="display:none;">
+      <h2 id="gameUUID"></h2>
+      <ul id="playerlist"></ul>
+      <button onclick="newPlayer()">Aller, on Joue, là !</button>
+    </section>
   </body>
 </html>
