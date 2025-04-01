@@ -3,6 +3,15 @@ const https = require('https');
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
 
+app.get('/style.css', function(req, res) {
+  res.set('Content-Type', 'text/js');
+  res.sendFile(__dirname + '/assets/index-CxtJFQC8.js');
+});
+ 
+app.get('/style.css', function(req, res) {
+  res.set('Content-Type', 'text/css');
+  res.sendFile(__dirname + '/assets/index-yJpzg09Q.css ');
+});
  
 app.get('/style.css', function(req, res) {
   res.set('Content-Type', 'text/css');
@@ -11,10 +20,6 @@ app.get('/style.css', function(req, res) {
 
 app.get("/", function (req, res) {
   res.sendFile(__dirname + '/index.html');
-});
-
-app.get("/wait.html", function (req, res) {
-  res.sendFile(__dirname + '/wait.html');
 });
 
 let gamesList = {};
