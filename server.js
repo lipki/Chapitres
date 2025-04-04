@@ -3,6 +3,21 @@ const https = require('https');
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
 
+const [Main, GR] = require('./lib/MainServer');
+
+const main = new Main();
+ 
+app.get('/lib/markdown-it', function(req, res) {
+  res.sendFile(__dirname + '/lib/markdown-it.js');
+});
+ 
+app.get('/lib/Nextor', function(req, res) {
+  res.sendFile(__dirname + '/lib/Nextor.js');
+});
+ 
+app.get('/lib/MainLocal.js', function(req, res) {
+  res.sendFile(__dirname + '/lib/MainLocal.js');
+});
  
 app.get('/style.css', function(req, res) {
   res.set('Content-Type', 'text/css');
@@ -13,100 +28,63 @@ app.get("/", function (req, res) {
   res.sendFile(__dirname + '/index.html');
 });
 
-app.get("/wait.html", function (req, res) {
-  res.sendFile(__dirname + '/wait.html');
+Main.addVoteCallback( 'start', (gameRoom, results) => {
+  io.to(gameRoom).emit('start vote', results);
 });
 
-let gamesList = {};
+Main.addVoteCallback( 'univers', (gameRoom, results) => {
+  io.to(gameRoom).emit('univers vote', results);
+}, (gameRoom, results, winner) => {
+  io.to(gameRoom).emit('switch themes vote', results, winner);
+});
 
-io.on('connection', function (socket) {
+io.on('connection', socket => {
 
-    console.log('A user is connected');
+    console.log('Ⓢ socket connection');
 
-    let socketId = socket.id;
-
-    https.get("https://www.cjglitter.com/rand_name/api", (res) => {
+    https.get("https://www.cjglitter.com/rand_name/api", res => {
       let data = '';
+      res.on('data', chunk => data += chunk );
 
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-
-      res.on('end', () => {
-        const playerPseudo = JSON.parse(data).results[0].name.first_name;
-        console.log('├ random pseudo : ', playerPseudo);
-
-        const gameUUID = 'game-'+Math.floor(Date.now() / 1000).toString(36);
-        console.log('└ gameUUID : ' + gameUUID);
-
-        let playerData = {'gameUUID':gameUUID, 'playerPseudo':playerPseudo};
-
-        const gameData = {
-          'gameUUID' : gameUUID,
-          'playerPseudo' : playerPseudo
-        };
-
-        socket.emit('home', JSON.stringify(gameData));
-      });
+      res.on('end', () => 
+        socket.emit('home', 
+          JSON.stringify(
+            main.makeFakePlayer( JSON.parse(data).results[0].name.first_name ))));
     });
 
-    socket.on('disconnect', function() {
+    socket.on('disconnect', () => {
+      console.log('Ⓢ socket disconnect');
+      const gameRoom = main.removePlayer(socket.id);
 
-      let gameUUID, pseudo = '';
-
-      Object.entries(gamesList).forEach(([key, value]) => {
-        let newPlayerList = [];
-        value.forEach(v => {
-          if( v.uuid != socketId )
-            newPlayerList.push(v);
-          else {
-            gameUUID = key;
-            pseudo = v.pseudo;
-          }
-        });
-        if(newPlayerList.length === 0)
-             gamesList[key] = null;
-        else gamesList[key] = newPlayerList;
-      });
-
-      console.log('A user is disconnect');
-      console.log('├ removeplayer : ' + pseudo);
-      console.log('└ gameUUID : ' + gameUUID);
-
-      const gameData = {
-        'gameUUID' : gameUUID,
-        'removeplayer' : pseudo,
-        'playerList' : gamesList[gameUUID]
-      };
-      
-      io.emit('update player list', JSON.stringify(gameData));
+      if( gameRoom )
+        io.emit('update game data',
+          JSON.stringify(gameRoom.data(GR.OLDPLAYER, GR.PLAYERLIST)));
     });
 
-    socket.on('new player', function (newPlayerData) {
+    socket.on('new player', _newPlayerData => {
 
-      let playerData = JSON.parse(newPlayerData);
+      const player = main.makePlayer ( JSON.parse(_newPlayerData), socket.id );
+      const gameRoom = player.gameRoom;
 
-      console.log('Welcome to new challenger !');
-      console.log('├ pseudo : ' + playerData.playerPseudo);
-      console.log('└ gameUUID : ' + playerData.gameUUID);
+      if( gameRoom.private ) {
+        socket.emit('gameRoom private', JSON.stringify(gameRoom.data()));
+        return ;
+      }
 
-      if( gamesList[playerData.gameUUID] === undefined )
-        gamesList[playerData.gameUUID] = [];
-      gamesList[playerData.gameUUID].push({'pseudo':playerData.playerPseudo, 'uuid':socketId});
+      socket.join( gameRoom.uuid );
 
-      console.log('player list : ', gamesList);
+      socket.emit('switch to wait room',
+        JSON.stringify(gameRoom.data(GR.NEWPLAYER, GR.UNIVERS)));
 
-      const gameData = {
-        'gameUUID' : playerData.gameUUID,
-        'newplayer' : playerData.playerPseudo,
-        'playerList' : gamesList[playerData.gameUUID]
-      };
+      io.to(gameRoom.uuid).emit('update game data',
+        JSON.stringify(gameRoom.data(GR.PLAYERLIST)));
+    });
 
-      socket.emit('switch to wait room', JSON.stringify(gameData));
-      io.emit('update player list', JSON.stringify(gameData));
-    })
+    socket.on('vote', _vote => {
+      main.generalVote( socket.id, JSON.parse(_vote) )
+    });
 })
 
-http.listen(3000, function () {
+http.listen(3000, () => {
     console.log("Server running on 3000");
 })
