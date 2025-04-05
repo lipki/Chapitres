@@ -4,39 +4,28 @@ const http = require('http').Server(app);
 const io = require('socket.io')(http);
 
 const [Main, GR] = require('./lib/MainServer');
+const GameRoom = require('./lib/GameRoom');
 
-const main = new Main();
- 
-app.get('/lib/markdown-it', function(req, res) {
-  res.sendFile(__dirname + '/lib/markdown-it.js');
-});
- 
-app.get('/lib/Nextor', function(req, res) {
-  res.sendFile(__dirname + '/lib/Nextor.js');
-});
- 
-app.get('/lib/MainLocal.js', function(req, res) {
-  res.sendFile(__dirname + '/lib/MainLocal.js');
-});
- 
-app.get('/style.css', function(req, res) {
-  res.set('Content-Type', 'text/css');
-  res.sendFile(__dirname + '/style.css');
-});
+const main = new Main(io);
+GameRoom.io = io;
 
-app.get("/", function (req, res) {
-  res.sendFile(__dirname + '/index.html');
-});
+const routes = [
+  {uri:'/lib/markdown-it.js'},
+  {uri:'/lib/Nextor', redirect: '/lib/Nextor.js'},
+  {uri:'/lib/MainLocal.js'},
+  {redirect: '/style.css', mime:'text/css'},
+  {uri:'/', redirect: '/index.html'}
+]
 
-Main.addVoteCallback( 'start', (gameRoom, results) => {
-  io.to(gameRoom).emit('start vote', results);
-});
-
-Main.addVoteCallback( 'univers', (gameRoom, results) => {
-  io.to(gameRoom).emit('univers vote', results);
-}, (gameRoom, results, winner) => {
-  io.to(gameRoom).emit('switch themes vote', results, winner);
-});
+routes.forEach( route => {
+  let redirect = route.redirect ?? route.uri;
+  let uri = route.uri ?? route.redirect;
+  let mime = route.mime;
+  app.get(uri, (req, res) => {
+    if( mime ) res.set('Content-Type', mime);
+    res.sendFile(__dirname + redirect)
+  });
+})
 
 io.on('connection', socket => {
 
@@ -81,7 +70,8 @@ io.on('connection', socket => {
     });
 
     socket.on('vote', _vote => {
-      main.generalVote( socket.id, JSON.parse(_vote) )
+      const player = Main.playerList.get(socket.id);
+      player.gameRoom.generalVote( JSON.parse(_vote) );
     });
 })
 
