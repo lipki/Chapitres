@@ -3,10 +3,8 @@ const https = require('https');
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
 
-const [Main, GR] = require('./lib/MainServer');
 const GameRoom = require('./lib/GameRoom');
 
-const main = new Main(io);
 GameRoom.io = io;
 
 const routes = [
@@ -38,40 +36,20 @@ io.on('connection', socket => {
       res.on('end', () => 
         socket.emit('home', 
           JSON.stringify(
-            main.makeFakePlayer( JSON.parse(data).results[0].name.first_name ))));
+            GameRoom.makeFakePlayer( JSON.parse(data).results[0].name.first_name ))));
     });
 
     socket.on('disconnect', () => {
       console.log('Ⓢ socket disconnect');
-      const gameRoom = main.removePlayer(socket.id);
-
-      if( gameRoom )
-        io.emit('update game data',
-          JSON.stringify(gameRoom.data(GR.OLDPLAYER, GR.PLAYERLIST)));
+      GameRoom.removePlayer(socket.id);
     });
 
     socket.on('new player', _newPlayerData => {
-
-      const player = main.makePlayer ( JSON.parse(_newPlayerData), socket.id );
-      const gameRoom = player.gameRoom;
-
-      if( gameRoom.private ) {
-        socket.emit('gameRoom private', JSON.stringify(gameRoom.data()));
-        return ;
-      }
-
-      socket.join( gameRoom.uuid );
-
-      socket.emit('switch to wait room',
-        JSON.stringify(gameRoom.data(GR.NEWPLAYER, GR.UNIVERS)));
-
-      io.to(gameRoom.uuid).emit('update game data',
-        JSON.stringify(gameRoom.data(GR.PLAYERLIST)));
+      GameRoom.makePlayer ( JSON.parse(_newPlayerData), socket );
     });
 
     socket.on('vote', _vote => {
-      const player = Main.playerList.get(socket.id);
-      player.gameRoom.generalVote( JSON.parse(_vote) );
+      GameRoom.playerList.get(socket.id).gameRoom.generalVote( socket.id, JSON.parse(_vote) );
     });
 })
 
