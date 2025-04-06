@@ -1,10 +1,11 @@
-const universData = require('../assets/univers');
+import universData from '../assets/univers.json' with { type: 'json' };
+
 
 /**
  * Classe représentant un univers de jeu avec ses thèmes et autres données associées.
  * Permet de récupérer des informations sur les univers, les thèmes et de manipuler les mots aléatoires.
  */
-class Univers {
+export default class Univers {
 
   /**
    * Données de l'univers.
@@ -133,5 +134,3 @@ class Univers {
     this.#usedWords.clear();
   }
 }
-
-module.exports = Univers;

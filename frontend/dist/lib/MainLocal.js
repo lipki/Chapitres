@@ -1,5 +1,5 @@
 import markdownIt from 'https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/+esm';
-import Nextor from './Nextor';
+import Nextor from './Nextor.js';
 
 const socket = io();
 const md = markdownIt({

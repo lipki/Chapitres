@@ -1,5 +1,5 @@
-const Urne = require('./Urne');
-const Univers = require('./Univers');
+import Urne from './Urne.js';
+import Univers from './Univers.js';
 const U = new Univers();
 
 const GAMESTAT = {
@@ -20,7 +20,7 @@ const DATA = {
   VOTERSTATUS: 'status des voters'
 }
 
-class GameRoom {
+export class GameRoom {
 
   static io;
   static list = new Map();
@@ -286,7 +286,7 @@ class GameRoom {
 
 }
 
-class Player {
+export class Player {
 
   static list = new Map();
 
@@ -318,5 +318,3 @@ class Player {
   }
 
 }
-
-module.exports = [GameRoom, Player];

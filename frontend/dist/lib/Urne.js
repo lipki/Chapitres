@@ -1,7 +1,7 @@
 /**
  * Classe représentant une urne électorale. Elle gère les électeurs, les élections et les votes.
  */
-class Urne {
+export default class Urne {
 
   /** @type {Map<string, Urne>} */
   static #electorLists = new Map();
@@ -336,5 +336,3 @@ class Candidate {
   }
 
 }
-
-module.exports = Urne;
