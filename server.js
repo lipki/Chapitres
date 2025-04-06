@@ -3,7 +3,7 @@ const https = require('https');
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
 
-const GameRoom = require('./lib/GameRoom');
+const [GameRoom, Player] = require('./lib/GameRoom');
 
 GameRoom.io = io;
 
@@ -49,7 +49,7 @@ io.on('connection', socket => {
     });
 
     socket.on('vote', _vote => {
-      GameRoom.playerList.get(socket.id).gameRoom.generalVote( socket.id, JSON.parse(_vote) );
+      Player.list.get(socket.id).gameRoom.generalVote( socket.id, JSON.parse(_vote) );
     });
 })
 

@@ -4,7 +4,7 @@
     <title>Chapitres - Home</title>
     <link rel="stylesheet" type="text/css" href="/style.css">
   </head>
-  <body class="parent"></body>
+  <body></body>
     <script src="/socket.io/socket.io.js"></script>
     <script type="module" src="/lib/MainLocal.js"></script>
     <h1>Chapitres</h1>
@@ -34,16 +34,22 @@
     </section>
 
     <section id="univers" style="display:none;">
-      <fieldset>
-        <legend>Choisissez un univers</legend>
-      </fieldset>
+      <fieldset></fieldset>
     </section>
 
     <section id="themes" style="display:none;">
-      <fieldset>
-        <legend>Choisissez un theme</legend>
-      </fieldset>
+      <fieldset></fieldset>
     </section>
+
+    <section id="pitch" style="display:none;">
+      <fieldset></fieldset>
+    </section>
+
+    <div class="waiting-dots">
+      <span>.</span>
+      <span>.</span>
+      <span>.</span>
+    </div>
 
   </body>
 </html>
