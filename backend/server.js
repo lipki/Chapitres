@@ -11,7 +11,7 @@ const port = 3000;
 const server = _http.createServer(app);
 const io = new Server(server);
 
-import {GameRoom, Player} from './backend/lib/GameRoom.js';
+import {GameRoom, Player} from './lib/GameRoom.js';
 GameRoom.io = io;
 
 // Obtenir le chemin absolu vers le dossier dist
