@@ -1,0 +1,27 @@
+Page d'accueil, avertissement, explication, choix de pseudo, cr�ation de partie.
+
+Page d'attente des joueurs
+
+Page de vote d'univers
+Page de vote de th�mes
+
+Page de jeu
+	section liste des joueurs
+		Affiche l'ordre de passage
+	section pioche
+		pioche
+		d�fausse
+	section bouton
+		stop
+		participation
+		vote
+	section fiche de perso
+
+
+
+30 -> 15 Et maintenant ? 15-x la fin est proche x fin
+40 -> 20 Et maintenant ? 20-x la fin est proche x fin
+50 -> 25 Et maintenant ? 25-x la fin est proche x fin
+60 -> 30 Et maintenant ? 30-x la fin est proche x fin
+
+Date, thème, personnage, résumé.
