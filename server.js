@@ -30,28 +30,20 @@ server.listen(port, () => {
 
 io.on('connection', socket => {
 
-  console.log('Ⓢ socket connection');
+  console.log('Ⓢ socket connection : ', socket.id);
 
-  https.get("https://www.cjglitter.com/rand_name/api", res => {
-    let data = '';
-    res.on('data', chunk => data += chunk );
-
-    res.on('end', () => 
-      socket.emit('home', 
-        JSON.stringify(
-          GameRoom.makeFakePlayer( JSON.parse(data).results[0].name.first_name ))));
-  });
+  socket.emit('home', GameRoom.makeFakePlayer());
 
   socket.on('disconnect', () => {
-    console.log('Ⓢ socket disconnect');
+    console.log('Ⓢ socket disconnect : ', socket.id);
     GameRoom.removePlayer(socket.id);
   });
 
   socket.on('new player', _newPlayerData => {
-    GameRoom.makePlayer ( JSON.parse(_newPlayerData), socket );
+    GameRoom.makePlayer ( _newPlayerData, socket );
   });
 
   socket.on('vote', _vote => {
-    Player.list.get(socket.id).gameRoom.generalVote( socket.id, JSON.parse(_vote) );
+    Player.list.get(socket.id).gameRoom.generalVote( socket.id, _vote );
   });
 })

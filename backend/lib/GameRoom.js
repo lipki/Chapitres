@@ -1,4 +1,5 @@
 import Urne from './Urne.js';
+import NameGen from './NameGen.js';
 import Univers from './Univers.js';
 const U = new Univers();
 
@@ -25,13 +26,10 @@ export class GameRoom {
   static io;
   static list = new Map();
 
-  static getUUID () {
-    return (Date.now()+Math.floor(Math.random()*10)).toString(36);
-  }
+  static makeFakePlayer () {
 
-  static makeFakePlayer ( randomPseudo ) {
-
-    const gameRoomUUID = 'game-'+GameRoom.getUUID();
+    const randomPseudo = NameGen.get();
+    const gameRoomUUID = NameGen.get();
     
     console.info('\nA potentiel user is connected');
     console.info('├ random pseudo : ', randomPseudo);
@@ -110,17 +108,15 @@ export class GameRoom {
 
     player.join( this.uuid );
 
-    player.emit('switch to wait room',
-      JSON.stringify(this.data(
-        DATA.VOTESTART
-      )));
+    player.emit('switch to wait room', this.data(
+      DATA.VOTESTART
+    ));
 
-    this.#ioRoom.emit('update game data',
-      JSON.stringify(this.data(
-        DATA.NEWPLAYER,
-        DATA.PLAYERLIST,
-        DATA.VOTERSTATUS
-      )));
+    this.#ioRoom.emit('update game data', this.data(
+      DATA.NEWPLAYER,
+      DATA.PLAYERLIST,
+      DATA.VOTERSTATUS
+    ));
 
   }
 

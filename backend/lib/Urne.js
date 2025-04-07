@@ -13,7 +13,7 @@ export default class Urne {
   static getUUID () {
     return (Date.now()+Math.floor(Math.random()*10000)).toString(36);
   }
-
+  
 
   /** @type {string} */
   #uuid;
