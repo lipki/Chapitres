@@ -17,7 +17,7 @@
       },
       "cataclysm": {
         "title": "Un cataclysme naturel",
-        "pitch": "Les signes étaient partout, mais nous les avons ignorés. \n Il y a %1, une série de catastrophes naturelles frappa le monde. La population mondiale fut décimée. \n Nous avons rassemblé %2 Personnes et avons crée ensemble une communauté dans %3."
+        "pitch": "Les signes étaient partout, mais nous les avons ignorés. \n Il y a {temporality}, une série de catastrophes naturelles frappa le monde. La population mondiale fut décimée. \n Nous avons rassemblé {quantity} Personnes et avons crée ensemble une communauté dans {Location}."
       },
       "nuclear": {
         "title": "Une catastrophe nucléaire",
@@ -25,7 +25,7 @@
       },
       "alien": {
         "title": "Un contact extraterrestre",
-        "pitch": "Il y a %1, des entités extra-terrestres apparurent dans le ciel et obscurcirent le soleil. \n Sans rien savoir d'eux, les gouvernements du monde entier leur déclarèrent la guerre. Leur réplique, d'une violence inouîe, a détruit une grande partie de l'humanité. \n Nous avons rassemblé %2 personnes et avons créé ensemble une communauté dans %3."
+        "pitch": "Il y a {temporality}, des entités extra-terrestres apparurent dans le ciel et obscurcirent le soleil. \n Sans rien savoir d'eux, les gouvernements du monde entier leur déclarèrent la guerre. Leur réplique, d'une violence inouîe, a détruit une grande partie de l'humanité. \n Nous avons rassemblé {quantity} personnes et avons créé ensemble une communauté dans {Location}."
       }
     },
     "words": [
@@ -38,7 +38,7 @@
     "themes": {
       "city": {
         "title": "La défense de votre ville",
-        "pitch": "Les gyrophares retentissent au loin. \n Les malfrats ont encore frappés dans la ville de %1, en commettant %2. \n En tant que Super Héros et Super héroine de l'équipe %3, nous devons faire régner la justice."
+        "pitch": "Les gyrophares retentissent au loin. \n Les malfrats ont encore frappés dans la ville de {Location}, en commettant {Act}. \n En tant que Super Héros et Super héroine de l'équipe {Team}, nous devons faire régner la justice."
       },
       "world": {
         "title": "La protection de votre monde de la galaxie",

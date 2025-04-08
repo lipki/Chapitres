@@ -32,18 +32,26 @@ io.on('connection', socket => {
 
   console.log('Ⓢ socket connection : ', socket.id);
 
-  socket.emit('home', GameRoom.makeFakePlayer());
+  const fakePlayer = Player.makeFakePlayer();
+  
+  if( fakePlayer ) socket.emit('fake player data', fakePlayer );
 
   socket.on('disconnect', () => {
     console.log('Ⓢ socket disconnect : ', socket.id);
-    GameRoom.removePlayer(socket.id);
+    Player.removePlayer(socket.id);
   });
 
-  socket.on('new player', _newPlayerData => {
-    GameRoom.makePlayer ( _newPlayerData, socket );
+  socket.on('new player', newPlayerData => {
+    Player.get( socket, newPlayerData );
   });
 
   socket.on('vote', _vote => {
-    Player.list.get(socket.id).gameRoom.generalVote( socket.id, _vote );
+    Player.vote( socket.id, _vote );
   });
+
+  socket.on('pitch change', pitchChange => {
+    io.to(Player.list.get( socket.id ).gameRoom.uuid).emit('pitch change', pitchChange);
+  });
+
+  
 })

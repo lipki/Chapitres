@@ -26,6 +26,15 @@ export default class Univers {
   }
 
   /**
+   * Récupère un univers spécifique par son nom.
+   * @param {string} themeName - Le nom de l','univers à récupérer.
+   * @returns {object|null} L'Univers' trouvé ou null si non trouvé.
+   */
+  getUnivers(univerName) {
+    return this.#data[univerName];
+  }
+
+  /**
    * Obtient la liste des univers.
    * @returns {string[]} Un tableau des clés des univers qui contiennent des thèmes.
    */
