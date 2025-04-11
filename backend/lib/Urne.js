@@ -54,7 +54,7 @@ export default class Urne {
   addElection ( _electionData ) {
 
     let election = this.getElection ( _electionData.name );
-
+    
     if(election) return election;
 
     election = new Election( this, _electionData.name );
@@ -162,9 +162,9 @@ class Election {
     // Vérifier si le vote existe déjà
     if (this.#recordedVotes.has(key)) {
       this.#recordedVotes.delete(key);  // Supprimer le vote existant
-      const results = this.getResults();
-      if (this.actionVote) this.actionVote(results, this.getVoterStatusList());  // Appeler l'action de vote si définie
-      return this.getResults();
+      const candidateStatus = this.getCandidateStatusList();
+      if (this.actionVote) this.actionVote(candidateStatus, this.getVoterStatusList());  // Appeler l'action de vote si définie
+      return candidateStatus;
     }
 
     // Si aucun vote n'existe pour cette clé, enregistrer un nouveau vote
@@ -174,16 +174,16 @@ class Election {
       candidate: candidate.uuid
     });
 
-    const results = this.getResults();
-    if( this.actionVote ) this.actionVote( results, this.getVoterStatusList() );
+    const candidateStatus = this.getCandidateStatusList();
+    if( this.actionVote ) this.actionVote( candidateStatus, this.getVoterStatusList() );
 
     // Si la progression atteint 100%, fermer l'élection et appeler l'action associée
     if ( this.hasUnanimity () ) {
       this.#votingClosed = true;
-      if (this.actionVoted) this.actionVoted( results, this.winnerIs );
+      if (this.actionVoted) this.actionVoted( candidateStatus, this.winnerIs );
     }
 
-    return results;
+    return candidateStatus;
   }
 
   /**
@@ -243,7 +243,7 @@ class Election {
    * Retourne les résultats actuels de l’élection.
    * @returns {Array<{ name: string, votes: number, percentage: number }>}
    */
-  getResults () {
+  getCandidateStatusList () {
     const votes = [...this.#recordedVotes.values()];
   
     const totalVoters = this.#electorList.voterList.size;

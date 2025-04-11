@@ -3,7 +3,8 @@ import _http from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import https from 'https';
+import { communication } from './backend/lib/socket.js';
+import { GameState } from './backend/lib/GameState.js';
 
 const app = express();
 const port = 3000;
@@ -11,7 +12,7 @@ const port = 3000;
 const server = _http.createServer(app);
 const io = new Server(server);
 
-import {GameRoom, Player} from './backend/lib/GameRoom.js';
+import {GameRoom} from './backend/lib/GameRoom.js';
 GameRoom.io = io;
 
 // Obtenir le chemin absolu vers le dossier dist
@@ -25,33 +26,7 @@ app.use(express.static(path.join(__dirname, './frontend/dist')));
 //app.all('*', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
 
 server.listen(port, () => {
-    console.log(`Ⓢ Server running on ${port}`);
+    GameState.logBlock(`🔌 Server running on ${port}`);
 })
 
-io.on('connection', socket => {
-
-  console.log('Ⓢ socket connection : ', socket.id);
-
-  const fakePlayer = Player.makeFakePlayer();
-  
-  if( fakePlayer ) socket.emit('fake player data', fakePlayer );
-
-  socket.on('disconnect', () => {
-    console.log('Ⓢ socket disconnect : ', socket.id);
-    Player.removePlayer(socket.id);
-  });
-
-  socket.on('new player', newPlayerData => {
-    Player.get( socket, newPlayerData );
-  });
-
-  socket.on('vote', _vote => {
-    Player.vote( socket.id, _vote );
-  });
-
-  socket.on('pitch change', pitchChange => {
-    io.to(Player.list.get( socket.id ).gameRoom.uuid).emit('pitch change', pitchChange);
-  });
-
-  
-})
+communication(io);

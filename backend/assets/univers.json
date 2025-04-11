@@ -5,7 +5,36 @@
       "secret",
       "mensonge",
       "conflit",
-      "invention"
+      "invention",
+      "tristesse",
+      "révélation",
+      "douleur",
+      "abandon",
+
+      "souvenir",
+      "colère",
+      "espoir",
+      "rêve",
+      "promesse",
+      "peur",
+      "quête",
+      "solitude",
+      "vérité",
+      "sacrifice",
+      "illusion",
+      "trahison",
+      "refuge",
+      "renoncement",
+      "volonté",
+      "mystère",
+      "départ",
+      "découverte",
+      "partage",
+      "mémoire",
+      "honte",
+      "chagrin",
+      "urgence",
+      "transformation"
     ]
   },
   "postapocalyptic": {
@@ -13,11 +42,11 @@
     "themes": {
       "undead": {
         "title": "Une invasion de mort-vivants",
-        "pitch": "Ici, il y a un pitch"
+        "pitch": "Il y a maintenant {temporality}, les morts ont commencé à se relever de leurs tombes. \n Les institutions telles que nous les connaissons ont été boulversées à mesure que les zombies envahissaient le monde. \n Nous avons rassemblé {quantity} personnes et avons crée ensemble une communauté dans {location}."
       },
       "cataclysm": {
         "title": "Un cataclysme naturel",
-        "pitch": "Les signes étaient partout, mais nous les avons ignorés. \n Il y a {temporality}, une série de catastrophes naturelles frappa le monde. La population mondiale fut décimée. \n Nous avons rassemblé {quantity} Personnes et avons crée ensemble une communauté dans {Location}."
+        "pitch": "Les signes étaient partout, mais nous les avons ignorés. \n Il y a {temporality}, une série de catastrophes naturelles frappa le monde. La population mondiale fut décimée. \n Nous avons rassemblé {quantity} Personnes et avons crée ensemble une communauté dans {location}."
       },
       "nuclear": {
         "title": "Une catastrophe nucléaire",
@@ -28,9 +57,47 @@
         "pitch": "Il y a {temporality}, des entités extra-terrestres apparurent dans le ciel et obscurcirent le soleil. \n Sans rien savoir d'eux, les gouvernements du monde entier leur déclarèrent la guerre. Leur réplique, d'une violence inouîe, a détruit une grande partie de l'humanité. \n Nous avons rassemblé {quantity} personnes et avons créé ensemble une communauté dans {Location}."
       }
     },
+    "fiches": [
+      "Je m'appelle {name}. \n J'ai {age} Ans. \n Je cherche à retrouver {stuff}.",
+      "Je m'appelle {name}. \n J'ai {age} Ans. \n Je possède {stuff}.",
+      "Je m'appelle {name}. \n J'ai {age} Ans. \n Je suis {activity}.",
+      "Je m'appelle {name}. \n J'ai {age} Ans. \n Je suis fort pour {activity}."
+    ],
     "words": [
       "chaos",
-      "animal"
+      "animal",
+      "faim",
+      "blessure",
+      "culpabilité",
+      "arme",
+      "hostilité",
+      "menace",
+      "visite",
+      "traumatisme",
+      "sécurité",
+      "foyer",
+      "rencontre",
+      "surveillance",
+      "abimer",
+      "eau",
+
+      "masque",
+      "radiation",
+      "bunker",
+      "désert",
+      "pillage",
+      "mutant",
+      "explosion",
+      "brume",
+      "ruine",
+      "protection",
+      "groupe",
+      "caravane",
+      "bricolage",
+      "ration",
+      "épave",
+      "contamination",
+      "feu"
     ]
   },
   "Superpowers": {
@@ -53,10 +120,47 @@
         "pitch": "Ici, il y a un pitch"
       }
     },
+    "fiche": [
+      "Je m'appelle {name}. \n J'ai {age} Ans. \n Je cherche à retrouver {stuff}.",
+      "Je m'appelle {name}. \n J'ai {age} Ans. \n Je possède {stuff}.",
+      "Je m'appelle {name}. \n J'ai {age} Ans. \n Je suis {activity}.",
+      "Je m'appelle {name}. \n J'ai {age} Ans. \n Je suis fort pour {activity}."
+    ],
     "words": [
       "esquiver",
       "vision",
-      "entraver"
+      "entraver",
+      
+      "envol",
+      "double-vie",
+      "laser",
+      "masque",
+      "vortex",
+      "camouflage",
+      "gadget",
+      "destin",
+      "urgence",
+      "sérum",
+      "justice",
+      "duel",
+      "invincibilité",
+      "menace",
+      "vitesse",
+      "héritage",
+      "métamorphose",
+      "pouvoir",
+      "sauvetage",
+      "ombre",
+      "ennemi",
+      "éthique",
+      "mutation",
+      "code",
+      "signal",
+      "allié",
+      "chute",
+      "barrière",
+      "réveil",
+      "impact"
     ]
   }
 }

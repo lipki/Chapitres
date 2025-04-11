@@ -1,29 +1,17 @@
+import { GameState, EVENTS } from './GameState.js';
 import Urne from './Urne.js';
 import NameGen from './NameGen.js';
-import Univers from './Univers.js';
-const U = new Univers();
-
-const GAMESTAT = {
-  init: 'after create',
-  waitPlayer: 'after first player',
-  voteUnivers: 'vote for univers',
-  voteThemes: 'vote for themes',
-  votePitch: 'pitch composition',
-  game: 'The game'
-}
-
-const DATA = {
-  PLAYERLIST: 'list of all players',
-  VOTESTART: 'the first vote data',
-  VOTEUNIVERS: 'data for univers vote',
-  VOTETHEMES: 'data for themes vote',
-  VOTERSTATUS: 'status des voters'
-}
+import { Univers as U } from './Univers.js';
+//const U = new Univers();
 
 export class GameRoom {
 
   static io;
   static list = new Map();
+
+  static has ( uuid ) {
+    return GameRoom.list.has(uuid);
+  }
 
   static get ( uuid ) {
     if( GameRoom.list.has(uuid) )
@@ -36,7 +24,7 @@ export class GameRoom {
   }
 
 
-  stat = GAMESTAT.init;
+  gameState;
 
   uuid;
   playerList = new Map();
@@ -44,31 +32,238 @@ export class GameRoom {
   lastOldPlayer;
   private = false;
 
-  univer;
-
   electorList = new Urne();
+  askName;
+  askTitle;
+  askCandidates;
+  editor;
+  CardDraw;
+  turn;
+
 
   constructor ( _uuid ) {
     this.uuid = _uuid;
-    this.stepOne();
+
+    this.gameState = new GameState();
+
+    this.gameState.on ( GameState.S.WAITPLAYER, () => {
+
+      this.addAsk(
+        'start',
+        ['yes'],
+        ( candidateStatus, winner ) => {
+          this.emit(EVENTS.SR.ASK.END, candidateStatus, winner );
+          this.gameState.state = GameState.S.ASKUNIVERS;
+        }
+      );
+
+    });
+
+    this.gameState.on ( GameState.S.ASKUNIVERS, () => {
+
+      this.addAsk(
+        'univers',
+        U.getUniversList(),
+        ( candidateStatus, winner ) => {
+          this.univer = winner.name;
+          this.emit(EVENTS.SR.ASK.END, candidateStatus, winner.name );
+          this.gameState.state = GameState.S.ASKTHEMES;
+        }
+      );
+
+    });
+
+
+    this.gameState.on ( GameState.S.ASKTHEMES, () => {
+
+      this.addAsk(
+        'themes',
+        U.getThemesListFor( this.univer ),
+        ( candidateStatus, winner ) => {
+          this.theme = winner.name;
+          this.emit(EVENTS.SR.ASK.END, candidateStatus, winner.name );
+          this.gameState.state = GameState.S.ASKPITCH;
+        }
+      );
+
+    });
+
+
+    this.gameState.on ( GameState.S.ASKPITCH, () => {
+
+      this.addAsk(
+        'pitch',
+        ['ok'],
+        ( candidateStatus, winner ) => {
+          this.emit(EVENTS.SR.ASK.END, candidateStatus, winner );
+          this.gameState.state = GameState.S.ASKFICHE;
+        }
+      );
+
+      const [ _, _editor] = [...this.playerList][~~(Math.random() * this.playerList.size)];
+      this.editor = _editor;
+      this.emit(EVENTS.SR.PITCH.EDITOR, { editor: this.editor, theme: this.theme });
+
+    });
+
+
+    this.gameState.on ( GameState.S.ASKFICHE, () => {
+
+      this.addAsk(
+        'fiche',
+        ['done'],
+        ( candidateStatus, winner ) => {
+          this.emit(EVENTS.SR.ASK.END, candidateStatus, winner );
+          this.gameState.state = GameState.S.GAME;
+        }
+      );
+
+      const fichesList = U.getFichesListFor( this.univer );
+      [...this.playerList].forEach( ([_,player]) => {
+        player.fiche = ~~(Math.random() * fichesList.length);
+        player.emit(EVENTS.SC.FICHES, player.fiche);
+      });
+
+    });
+
+
+    this.gameState.on ( GameState.S.GAME, () => {
+
+      this.private = true;
+
+      // Préparation de la partie
+
+      this.CardDraw = [                                               // Récupération des mots
+        ...U.getWords().map( w => ({word: w, type: 'neutre'})),
+        ...U.getWords(this.univer).map( w => ({word: w, type: this.univer}))
+      ];
+
+      this.CardDraw = this.shuffleArray(this.CardDraw);                       // Mélange des mots
+      this.CardDraw = this.CardDraw.slice(0, 30);                             // Récupération du nombre maximal des mots (30, 40, 50, 60)
+
+      // Ajouts des informations complémentaires
+      this.CardDraw.forEach( card => {
+        card.ref = ~~(Math.random() * 4);
+        card.positif = ~~(Math.random() * 4);
+        card.negatif = ~~(Math.random() * 4);
+        if ( card.negatif === card.positif )
+          card.negatif = (card.negatif+1)%4;
+      });
+
+      // Ajout des étapes de jeu
+      this.CardDraw.push({type: 'step', word:'end', ref: ~~(Math.random() * 4)});
+      this.CardDraw.splice( 30-this.playerList.size, 0, {type: 'step', word:'nearEnd', ref: ~~(Math.random() * 4)});
+      this.CardDraw.splice( 30/2, 0, {type: 'step', word:'middle', ref: ~~(Math.random() * 4)});
+      
+      //console.log( CardDraw );
+
+      this.emit(EVENTS.SR.GAME.START);                              // Server announces game start
+
+      this.turn = ~~(Math.random() * this.playerList.size);
+
+      this.gameState.state = GameState.S.NEXTURN;
+
+    });
+
+
+    this.gameState.on ( GameState.S.NEXTURN, () => {
+
+      this.turn = (this.turn+1)%this.playerList.size;
+
+      let cardRecto = this.CardDraw.shift();
+      let cardVerso = { type: this.CardDraw[0].type, ref: this.CardDraw[0].ref };
+
+      this.emit(EVENTS.SR.GAME.TURN.START, [...this.playerList][this.turn][1], cardRecto, cardVerso);             // Server selects player and starts their turn
+
+    });
+
+
+    this.gameState.on ( GameState.S.TURN, () => {
+
+      this.gameState.state = GameState.S.NEXTURN;
+
+    });
+
+/*
+      GameRoom.on(EVENTS.SR.GAME.HELP, () => {});                   // Server notifies all players of help request
+      GameRoom.on(EVENTS.SR.GAME.STOP, () => {});                   // Server notifies all players of stop request
+      GameRoom.on(EVENTS.SR.GAME.DISCUSSION, () => {});             // Server notifies all players of discussion event
+
+      GameRoom.on(EVENTS.SR.GAME.BREAK.START, () => {});          // Server initiates break and triggers vote
+      GameRoom.on(EVENTS.SR.GAME.BREAK.UPDATE, () => {});         // Server sends vote updates during break
+      GameRoom.on(EVENTS.SR.GAME.BREAK.END, () => {});            // Server announces unanimous vote during break
+
+      GameRoom.on(EVENTS.SR.GAME.SOON.START, () => {});           // Server notifies that the end is approaching
+      GameRoom.on(EVENTS.SR.GAME.SOON.UPDATE, () => {});          // Server sends vote updates near the end
+      GameRoom.on(EVENTS.SR.GAME.SOON.END, () => {});             // Server announces unanimous vote near the end
+
+      GameRoom.on(EVENTS.SR.GAME.END, () => {}); 
+*/
+
+
+
+    this.gameState.state = GameState.S.WAITPLAYER;
+  }
+
+
+
+  shuffleArray(array) {
+    const result = [...array]; // copie pour ne pas muter l’original
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
+  }
+
+  emit( _ ) { GameRoom.io.to(this.uuid).emit(...arguments) }
+
+  addAsk( name, candidates, end ) {
+
+    this.askName = name;
+    this.askCandidates = candidates;
+
+    this.election = this.electorList.addElection({
+      name: name, candidates: this.askCandidates,
+      actionVote: ( candidateStatus, voterStatus ) => this.emit(EVENTS.SR.ASK.UPDATE, candidateStatus, voterStatus),
+      actionVoted: ( candidateStatus, winner ) => end(candidateStatus, winner)
+    });
+
+    this.emit(EVENTS.SR.ASK.NEW, { name: name, candidates: candidates });
+
+    GameState.logBlock('🗳️ Vote create', {'name': name});
   }
 
   addPlayer(player) {
 
     this.playerList.set( player.uuid, player );
+    this.electorList.addVoter( player.pseudo, player.uuid );
     this.lastAddPlayer = player;
 
-    this.electorList.addVoter( player.pseudo, player.uuid );
+    player.emit(EVENTS.SC.LOBBY.JOINED, {
+      gameRoomUUID: this.uuid,
+      pseudo: player.pseudo,
+      playerUUID: player.uuid,
+      gameState: this.gameState.state
+    });
 
-    player.emit('vote validated', 'start', this.data(
-      {playerUUID: player.uuid}
-    ));
+    this.emit(EVENTS.SR.GAME.UPDATE, {
+      gameRoomUUID: this.uuid,
+      newPlayer: this.lastAddPlayer,
+      playerList: [...this.playerList.values()],
+      univers: this.univer,
+      theme: this.theme
+    });
 
-    GameRoom.io.to(this.uuid).emit('update game data', this.data(
-      {newPlayer: this.lastAddPlayer},
-      DATA.PLAYERLIST,
-      DATA.VOTERSTATUS
-    ));
+    player.emit(EVENTS.SR.ASK.NEW, { name: this.askName, candidates: this.askCandidates });
+    this.emit(EVENTS.SR.PITCH.EDITOR, { editor: this.editor, theme: this.theme });
+    this.emit(EVENTS.SR.ASK.UPDATE, this.election?.getCandidateStatusList(), this.election?.getVoterStatusList());
+
+    const fichesList = U.getFichesListFor( this.univer );
+    [...this.playerList].forEach( ([_,player]) => {
+      if( !player.fiche ) player.fiche = ~~(Math.random() * fichesList.length);
+      player.emit(EVENTS.SC.FICHES, player.fiche)
+    });
 
   }
 
@@ -83,167 +278,20 @@ export class GameRoom {
     
     delete this.playerList.delete(uuid);
 
-    GameRoom.io.to(this.uuid).emit('update game data', this.data(
-      {removePlayer: this.lastOldPlayer},
-      DATA.PLAYERLIST,
-      DATA.VOTERSTATUS
-    ));
-
-  }
-
-  dataMethods = {
-    [DATA.PLAYERLIST]:  () => ({ playerList: [...this.playerList.values()] }),
-    [DATA.VOTESTART]:   () => ({ candidates: [{ name: 'yes', title: 'Aller, on joue, là !' }] }),
-    [DATA.VOTEUNIVERS]: () => ({ candidates: U.getUniversTitles() }),
-    [DATA.VOTETHEMES]:  () => ({ candidates: U.getThemesTitles(this.univer) }),
-    [DATA.VOTERSTATUS]: () => ({ voterStatus: this.electionProgress.getVoterStatusList() }),
-    [DATA.VOTEPITCH]:   () => ({ candidates: [{ name: 'yes', title: 'OK, j\'aime cette histoire !' }] })
-  };
-
-  data( _ ) {
-    let data = { 'gameRoomUUID' : this.uuid };
-
-    [...arguments].forEach(arg => {
-      if (this.dataMethods[arg]) {
-        data = { ...data, ...this.dataMethods[arg]() };
-      } else {
-        data = { ...data, ...arg };
-      }
+    this.emit(EVENTS.SR.GAME.UPDATE, {
+      gameRoomUUID: this.uuid,
+      removePlayer: this.lastOldPlayer,
+      playerList: [...this.playerList.values()],
+      univers: this.univer,
+      theme: this.theme
     });
 
-    return data;
-  }
-
-  generalVote ( playerUUID, vote ) {
-    const player = this.playerList.get( playerUUID );
-    const voter = this.electorList.getVoter( player.pseudo );
-    const election = this.electorList.getElection ( vote.election );
-    const candidate = election.getCandidate ( vote.candidate );
-    const results = election.submitVote( voter, candidate );
-
-    console.info('\nPlayer as voted !');
-    console.info('├ election : ', election.name);
-    console.info('├ player : ', voter.name);
-    console.info('├ candidate : ', candidate.name);
-    console.info('└ results : ', results);
-  }
-
-
-
-
-
-
-  stepOne() {
-
-    console.info('\nGAMESTAT : ', this.stat);
-    
-    this.electionProgress = this.electorList.addElection({
-      name: 'start',
-      candidates: ['yes'],
-      actionVote: (results, voterStatus) => GameRoom.io.to(this.uuid).emit('update vote', 'start', results, voterStatus),
-      actionVoted: (results, winner) => this.stepUniversVote( results, winner )
-    });
-
-    this.stat = GAMESTAT.waitPlayer;
-    console.info('\nGAMESTAT : ', this.stat);
-
-
-  }
-
-  stepUniversVote( results, winner ) {
-
-    this.private = true;
-    GameRoom.io.to(this.uuid).emit('vote validated', 'univers',this.data(
-      {winner: winner.name},
-      DATA.VOTEUNIVERS
-    ));
-
-    this.electionProgress = this.electorList.addElection({
-      name: 'univers',
-      candidates: U.getUniversList(),
-      actionVote: (results, voterStatus) => GameRoom.io.to(this.uuid).emit('update vote', 'univers', results, voterStatus),
-      actionVoted: (results, winner) => this.stepThemesVote( results, winner )
-    });
-
-    this.stat = GAMESTAT.voteUnivers;
-    console.info('\nGAMESTAT : ', this.stat);
-
-  }
-
-  stepThemesVote( results, winner ) {
-
-    this.univer = winner.name;
-
-    GameRoom.io.to(this.uuid).emit('vote validated', 'themes', this.data(
-      {winner: winner.name},
-      U.getUnivers(winner.name),
-      DATA.VOTETHEMES
-    ));
-    
-    this.electionProgress = this.electorList.addElection({
-      name: 'themes',
-      candidates: U.getThemesFor( this.univer ),
-      actionVote: (results, voterStatus) => GameRoom.io.to(this.uuid).emit('update vote', 'themes', results, voterStatus),
-      actionVoted: (results, winner) => this.stepPitchVote( results, winner )
-    });
-
-    this.stat = GAMESTAT.voteThemes;
-    console.info('\nGAMESTAT : ', this.stat);
-
-  }
-
-  stepPitchVote( results, winner ) {
-
-    this.theme = winner.name;
-
-    GameRoom.io.to(this.uuid).emit('vote validated', 'pitch', this.data(
-      {winner: winner.name},
-      U.getTheme(winner.name),
-      DATA.VOTEPITCH
-    ));
-
-    const [ _, editor] = [...this.playerList][~~(Math.random() * this.playerList.size)];
-
-    GameRoom.io.to(this.uuid).emit('update game data', this.data(
-      {editor: editor}
-    ));
-
-    editor.emit('Editor is you');
-    
-    
-    this.electorList.addElection({
-      name: 'pitch',
-      candidates: ['yes'],
-      actionVote: (results) => GameRoom.io.to(this.uuid).emit('pitch vote', results),
-      actionVoted: (results, winner) => this.stepGame( results, winner )
-        //this.univer = winner.name;
-        //this.stepTwo( results, winner );
-        //GameRoom.io.to(this.uuid).emit('switch themes vote', results, winner.name);
-    });
-
-    this.stat = GAMESTAT.votePitch;
-    console.info('\nGAMESTAT : ', this.stat);
-
-  }
-
-  stepGame( results, winner ) {
-
-    this.pitch = winner.name;
-
-    GameRoom.io.to(this.uuid).emit('vote validated', 'game', this.data(
-      {winner: winner.name}
-    ));
-
-    const [ _, turn] = [...this.playerList][~~(Math.random() * this.playerList.size)];
-
-    GameRoom.io.to(this.uuid).emit('update game data', this.data(
-      {turn: turn}
-    ));
-
-    turn.emit('is you turn !');
-
-    this.stat = GAMESTAT.game;
-    console.info('\nGAMESTAT : ', this.stat);
+    const playerlist = [...this.playerList];
+    if( this.editor && this.editor.uuid === player.uuid && this.playerList.length > 0 ) {
+      const [ _, _editor] = playerlist[~~(Math.random() * this.playerList.size)];
+      this.editor = _editor;
+      this.emit(EVENTS.SR.PITCH.EDITOR, { editor: this.editor, theme: this.theme });
+    }
 
   }
 
@@ -258,39 +306,16 @@ export class Player {
     const randomPseudo = NameGen.get();
     const randomGameRoomUUID = NameGen.get();
     
-    console.info('\nA potentiel user is connected');
-    console.info('├ random pseudo : ', randomPseudo);
-    console.info('└ gameUUID : ' + randomGameRoomUUID);
+    GameState.logBlock('🔌 A potentiel user is connected', {'random pseudo': randomPseudo, 'gameUUID': randomGameRoomUUID});
 
     return { 'gameRoomUUID' : randomGameRoomUUID, 'pseudo' : randomPseudo }
 
   }
 
-  static get ( socket, playerdata ) {
-
-    if( Player.list.get(socket) )
-      return socket.emit('error', {error: 'socket existe, je ne sait pas quoi faire de cette information'});
-
-    if( [...Player.list].find( ([k,v]) => v === playerdata.pseudo ) )
-      return socket.emit('error', {error: 'Un joueur possède déjà ce pseudo'});
-
-    const gameRoom = GameRoom.get( playerdata.gameRoomUUID );
-
-    if( gameRoom.private )
-      return socket.emit('error', {error: 'gameRoom private'});
-
-    const player = new Player( socket, playerdata.pseudo );
-    socket.join( playerdata.gameRoomUUID );
-    player.addGameRoom( gameRoom );
-    gameRoom.addPlayer( player );
-
-    const socketRoom = [...GameRoom.io.sockets.adapter.rooms].filter(([k,v]) => !Player.list.get(k));
-
-    console.info('\nWelcome to new challenger !');
-    console.info('├ pseudo : ', playerdata.pseudo);
-    console.info('├ gameRoomUUID : ', playerdata.gameRoomUUID);
-    console.info('└ socket rooms : ', socketRoom);
-
+  static has ( token ) {
+    let isuuid = Player.list.has(token);
+    let ispseudo = [...Player.list].find( ([k,v]) => v.pseudo === token );
+    return isuuid || !!ispseudo;
   }
 
   static removePlayer ( uuid ) {
@@ -298,23 +323,17 @@ export class Player {
     const player = Player.list.get( uuid );
     if( player === undefined ) return false;
 
-    console.info('\nA user is disconnect');
-    console.info('├ removeplayer : ' + player.pseudo);
-    console.info('└ gameRoomUUID : ' + player.#gameRoom.uuid);
+    GameState.logBlock('🔌 A user is disconnect', player);
 
     delete Player.list.delete(uuid);
     player.#gameRoom.removePlayer ( uuid );
-  }
-
-  static vote ( uuid, vote) {
-    const player = Player.list.get( uuid );
-    player.gameRoom.generalVote( uuid, vote );
   }
 
   #socket;
   uuid;
   pseudo;
   #gameRoom;
+  fiche;
 
   constructor ( _socket, _pseudo ) {
     this.#socket = _socket;

@@ -15,7 +15,10 @@ export default class NameGen {
   }
 
   static get() {
-    return NameGen.capFirst(NameGen.name1[NameGen.getRandomInt(0, NameGen.name1.length + 1)]) +
-      NameGen.capFirst(NameGen.name2[NameGen.getRandomInt(0, NameGen.name2.length + 1)]);
+    let one = NameGen.capFirst(NameGen.name1[NameGen.getRandomInt(0, NameGen.name1.length + 1)]);
+    let two = NameGen.capFirst(NameGen.name2[NameGen.getRandomInt(0, NameGen.name2.length + 1)]);
+    if( Math.random() > 0.5 )
+         return one + two;
+    else return two + one;
   }
 }
